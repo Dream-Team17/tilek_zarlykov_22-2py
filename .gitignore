@@ -9,3 +9,6 @@ __pycache__/
 test.py
 pyvenv.cfg
 /Scripts
+db.sqlite3
+static
+media
