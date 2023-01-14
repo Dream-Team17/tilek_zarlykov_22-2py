@@ -9,7 +9,7 @@ from movie_app.views import( movies_view,
                              )
 
 urlpatterns = [
-    path('movies', movies_view),
+    path('movies/', movies_view),
     path('movies/<int:id>/', movie_detail_view),
     path('directors/', directors_view),
     path('directors/<int:id>/', director_detail_view),
