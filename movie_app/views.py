@@ -34,14 +34,15 @@ def movie_detail_view(request, **kwargs):
         return Response(data=serializer.data)
     elif request.method == 'DELETE':
         movie.delete()
-        return Response({"message": "Movie was deleted"},
+        return Response(data={"message": "Movie was deleted"},
                         status=status.HTTP_204_NO_CONTENT)
     else:
         movie.title = request.data.get('title')
         movie.description = request.data.get('description')
         movie.duration = request.data.get('duration')
         movie.director_id = request.data.get('director')
-        return Response({"message": "Data were changed!",
+        movie.save()
+        return Response(data={"message": "Data were changed!",
                          'movie': MovieSerializer(movie).data},
                         status=status.HTTP_201_CREATED)
 
@@ -59,12 +60,27 @@ def directors_view(request, **kwargs):
                          'director': DirectorSerializer(director).data},
                         status=status.HTTP_201_CREATED)
 
-@api_view(['GET'])
+@api_view(['GET', 'PUT', 'DELETE'])
 def director_detail_view(request, **kwargs):
+    try:
+        director = Director.objects.get(id=kwargs["id"])
+    except Director.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND,
+                        data={"message": "Director not found!"})
     if request.method == 'GET':
         director = Director.objects.get(id=kwargs['id'])
         serializer = DirectorSerializer(director, many=False)
         return Response(data=serializer.data)
+    elif request.method == 'DELETE':
+        director.delete()
+        return Response(data={"message": "Director was deleted!"},
+                        status=status.HTTP_204_NO_CONTENT)
+    else:
+        director.name = request.data.get('name')
+        director.save()
+        return Response(data={"message": "Director was changed!",
+                              "director": DirectorSerializer(director).data},
+                        status=status.HTTP_201_CREATED)
 
 @api_view(['GET', 'POST'])
 def reviews_view(request, **kwargs):
@@ -76,16 +92,32 @@ def reviews_view(request, **kwargs):
         text = request.data.get('text')
         movie = request.data.get('movie')
         review = Review.objects.create(text=text, movie_id=movie)
-        return Response({"message": "Review was created!",
+        return Response(data={"message": "Review was created!",
                          "review": ReviewSerializer(review).data},
                         status=status.HTTP_201_CREATED)
 
-@api_view(['GET'])
+@api_view(['GET', 'PUT', 'DELETE'])
 def review_detail_view(request, **kwargs):
+    try:
+        review = Review.objects.get(id=kwargs['id'])
+    except Review.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND,
+                        data={"message": "Review not found!"})
     if request.method == 'GET':
         review = Review.objects.get(id=kwargs['id'])
         serializer = ReviewSerializer(review, many=False)
         return Response(data=serializer.data)
+    elif request.method =='DELETE':
+        review.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT,
+                        data={"message": "Review was deleted!"})
+    else:
+        review.text = request.data.get('text')
+        review.movie_id = request.data.get('movie')
+        review.save()
+        return Response(status=status.HTTP_201_CREATED,
+                        data={"message": "Review was changed!",
+                              "review": ReviewSerializer(review).data})
 
 @api_view(['GET'])
 def movies_reviews_view(request):
