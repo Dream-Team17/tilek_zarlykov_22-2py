@@ -1,7 +1,15 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from movie_app.models import Movie, Director, Review
-from movie_app.serializers import MovieSerializer, DirectorSerializer, ReviewSerializer, MovieReviewSerializer
+from movie_app.serializers import (MovieSerializer,
+                                   DirectorSerializer,
+                                   ReviewSerializer,
+                                   MovieReviewSerializer,
+                                   MovieCreateSerializer,
+                                   MovieUpdateSerializer,
+                                   DirectorValidateSerializer,
+                                   DirectorUpdateSerializer,
+                                   ReviewValidateSerializer)
 from rest_framework import status
 # Create your views here.
 
@@ -12,10 +20,14 @@ def movies_view(request):
         serializer = MovieSerializer(movies, many=True)
         return Response(data=serializer.data)
     elif request.method == 'POST':
-        title = request.data.get('title')
-        description = request.data.get('description')
-        duration = request.data.get('duration')
-        director = request.data.get('director')
+        serializer = MovieCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(status=status.HTTP_400_BAD_REQUEST,
+                            data={"errors": serializer.errors})
+        title = serializer.validated_data.get('title')
+        description = serializer.validated_data.get('description')
+        duration = serializer.validated_data.get('duration')
+        director = serializer.validated_data.get('director')
         movie = Movie.objects.create(title=title, description=description, duration=duration, director_id=director)
 
         return Response(data={'message':'Data recieved',
@@ -37,10 +49,13 @@ def movie_detail_view(request, **kwargs):
         return Response(data={"message": "Movie was deleted"},
                         status=status.HTTP_204_NO_CONTENT)
     else:
-        movie.title = request.data.get('title')
-        movie.description = request.data.get('description')
-        movie.duration = request.data.get('duration')
-        movie.director_id = request.data.get('director')
+        serializer = MovieUpdateSerializer(data=request.data,
+                                           context={"id": movie.id})
+        serializer.is_valid(raise_exception=True)
+        movie.title = serializer.validated_data.get('title')
+        movie.description = serializer.validated_data.get('description')
+        movie.duration = serializer.validated_data.get('duration')
+        movie.director_id = serializer.validated_data.get('director')
         movie.save()
         return Response(data={"message": "Data were changed!",
                          'movie': MovieSerializer(movie).data},
@@ -54,7 +69,9 @@ def directors_view(request, **kwargs):
         serializer = DirectorSerializer(directors, many=True)
         return Response(data=serializer.data)
     elif request.method == "POST":
-        name = request.data.get('name')
+        serializer = DirectorValidateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        name = serializer.validated_data.get('name')
         director = Director.objects.create(name=name)
         return Response({"message": "Director was created!",
                          'director': DirectorSerializer(director).data},
@@ -76,7 +93,10 @@ def director_detail_view(request, **kwargs):
         return Response(data={"message": "Director was deleted!"},
                         status=status.HTTP_204_NO_CONTENT)
     else:
-        director.name = request.data.get('name')
+        serializer = DirectorValidateSerializer(data=request.data,
+                                                context={"id": director.id})
+        serializer.is_valid(raise_exception=True)
+        director.name = serializer.validated_data.get('name')
         director.save()
         return Response(data={"message": "Director was changed!",
                               "director": DirectorSerializer(director).data},
@@ -89,8 +109,10 @@ def reviews_view(request, **kwargs):
         serializer = ReviewSerializer(reviews, many=True)
         return Response(data=serializer.data)
     elif request.method == 'POST':
-        text = request.data.get('text')
-        movie = request.data.get('movie')
+        serializer = ReviewValidateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        text = serializer.validated_data.get('text')
+        movie = serializer.validated_data.get('movie')
         review = Review.objects.create(text=text, movie_id=movie)
         return Response(data={"message": "Review was created!",
                          "review": ReviewSerializer(review).data},
@@ -112,8 +134,10 @@ def review_detail_view(request, **kwargs):
         return Response(status=status.HTTP_204_NO_CONTENT,
                         data={"message": "Review was deleted!"})
     else:
-        review.text = request.data.get('text')
-        review.movie_id = request.data.get('movie')
+        serializer = ReviewValidateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        review.text = serializer.validated_data.get('text')
+        review.movie_id = serializer.validated_data.get('movie')
         review.save()
         return Response(status=status.HTTP_201_CREATED,
                         data={"message": "Review was changed!",
