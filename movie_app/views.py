@@ -15,6 +15,7 @@ from rest_framework import status
 
 @api_view(['GET', 'POST'])
 def movies_view(request):
+    print(request.user)
     if request.method == 'GET':
         movies = Movie.objects.all()
         serializer = MovieSerializer(movies, many=True)
